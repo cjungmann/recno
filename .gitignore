@@ -1,0 +1,4 @@
+html
+latex
+*.db
+src/*.o
