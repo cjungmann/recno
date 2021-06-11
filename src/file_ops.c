@@ -118,7 +118,7 @@ RECNO_ERROR recno_read_head_handle_direct(FILE *file,
    HEAD_HANDLE temp_handle = { { offset, head_size } };
 
    if (!(rval = recno_read_data_direct(file,
-                                       &temp_handle.head_file,
+                                       &temp_handle.header,
                                        offset,
                                        head_size,
                                        errnum)))
@@ -158,7 +158,7 @@ RECNO_ERROR recno_handle_initialize_head(DB_HANDLE *handle,
 RECNO_ERROR recno_write_head(DB_HANDLE *db_handle, const HEAD_HANDLE *head_handle)
 {
    return recno_write_data_direct(db_handle->file,
-                                  &head_handle->head_file,
+                                  &head_handle->header,
                                   head_handle->bloc.offset,
                                   head_handle->bloc.size,
                                   &db_handle->errnum);
@@ -174,7 +174,7 @@ RECNO_ERROR recno_write_head(DB_HANDLE *db_handle, const HEAD_HANDLE *head_handl
 RECNO_ERROR recno_update_head(DB_HANDLE *db_handle, HEAD_HANDLE *head_handle)
 {
    return recno_read_data_direct(db_handle->file,
-                                 &head_handle->head_file,
+                                 &head_handle->header,
                                  head_handle->bloc.offset,
                                  head_handle->bloc.size,
                                  &db_handle->errnum);

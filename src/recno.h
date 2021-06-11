@@ -53,7 +53,7 @@ typedef enum {
  */
 typedef struct rn_head_handle {
    BLOC      bloc;        /**< file location of the block head */
-   HEAD_FILE head_file;   /**< largest head struct to ensure it fits */
+   HEAD_FILE header;      /**< largest head struct to ensure it fits */
 } HEAD_HANDLE;
 
 typedef struct recno_handle {
