@@ -15,7 +15,7 @@ void test_file_create(const char *filepath)
 {
    CREATE_PARAMS cparams = { 0, 4096 };
 
-   RHANDLE handle;
+   DB_HANDLE handle;
    RECNO_ERROR err = recno_create(filepath, &cparams, &handle);
    if (err)
       printf("Failed to create %s (%s)\n", filepath, recno_strerror(err, &handle));
@@ -28,7 +28,7 @@ void test_file_create(const char *filepath)
 
 void test_file_open(const char *filepath)
 {
-   RHANDLE handle;
+   DB_HANDLE handle;
    RECNO_ERROR err = recno_open(filepath, 0, &handle);
    if (err)
       printf("Failed to open %s (%s)\n", filepath, recno_strerror(err, &handle));

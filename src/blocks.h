@@ -21,6 +21,8 @@ typedef struct rn_block_location {
    off_t size;
 } BLOC;
 
+#define MAGIC_STRING "RCNO"
+
 /**
  * Every block begins with this structure, which provides the minimum information
  * needed to anonymously manage the block.  Headers that may immediately follow this
@@ -68,7 +70,7 @@ typedef struct rn_info_table {
  * Head for file.  Follows other xxxx_INFO types
  */
 typedef struct rn_info_file {
-   char     magic[4];     /**< Will always be "RCNO" */
+   char     magic[4];     /**< Will always be "RCNO" (but use MAGIC_STRING) */
    uint32_t chunk_size;   /**< Miniumum multiple of allocated file extensions. */
 } INFO_FILE;
 
@@ -97,6 +99,7 @@ typedef struct rn_head_file {
 } HEAD_FILE;
 
 uint16_t recno_get_headsize(BTYPE type);
+
 
 
 #endif

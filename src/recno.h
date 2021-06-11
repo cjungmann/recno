@@ -7,6 +7,7 @@
 #include <stdint.h>
 #include <string.h>
 #include <stdio.h>
+#include <stdbool.h>
 
 #include "blocks.h"
 
@@ -51,8 +52,8 @@ typedef enum {
  * Combination head data and the file location where it was found
  */
 typedef struct rn_head_handle {
-   HEAD_FILE head_file;   /**< largest head struct to ensure it fits */
    BLOC      bloc;        /**< file location of the block head */
+   HEAD_FILE head_file;   /**< largest head struct to ensure it fits */
 } HEAD_HANDLE;
 
 typedef struct recno_handle {
@@ -60,14 +61,15 @@ typedef struct recno_handle {
    uint32_t    padding;
    int         errnum;
    HEAD_HANDLE head_handle;
-} RHANDLE;
+} DB_HANDLE;
 
+const char *recno_strerror(RECNO_ERROR err, DB_HANDLE *handle);  // in "error.c"
 
-const char *recno_strerror(RECNO_ERROR err, RHANDLE *handle);  // in "error.c"
+RECNO_ERROR recno_create(const char *path, CREATE_PARAMS *params, DB_HANDLE *handle);
+RECNO_ERROR recno_open(const char *path, RECNO_FLAGS flags, DB_HANDLE *handle);
+RECNO_ERROR recno_close(DB_HANDLE *handle);
 
-RECNO_ERROR recno_create(const char *path, CREATE_PARAMS *params, RHANDLE *handle);
-RECNO_ERROR recno_open(const char *path, RECNO_FLAGS flags, RHANDLE *handle);
-RECNO_ERROR recno_close(RHANDLE *handle);
+RECNO_ERROR recno_open_table(DB_HANDLE *handle, const char *table_name, HEAD_HANDLE *table_handle);
 
 
 #endif

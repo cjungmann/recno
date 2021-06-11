@@ -28,7 +28,7 @@ const char *recno_error_strings[] = {
    "Invalid File Head"
 };
 
-EXPORT const char *recno_strerror(RECNO_ERROR err, RHANDLE *handle)
+EXPORT const char *recno_strerror(RECNO_ERROR err, DB_HANDLE *handle)
 {
    if (err == RECNO_SYSTEM_ERROR && handle)
       return strerror(handle->errnum);
