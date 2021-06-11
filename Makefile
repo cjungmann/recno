@@ -26,7 +26,7 @@ CFLAGS += -fvisibility=hidden  # restrict access to explicitely-revealed functio
 all: ${TARGET}.so ${TARGET}.a
 
 # Create list of prerequisites for building the TARGET:
-MODULES != ls -1 ${SRC}/*.c | grep -v  ^${SRC}/test_ | sed 's/\.c/.o/g'
+MODULES != ls -1 ${SRC}/*.c | grep -v ^${SRC}/test_ | grep -v ^${SRC}/link_ | sed 's/\.c/.o/g'
 
 TESTS != ls -1 ${SRC}/*.c | grep ^${SRC}/test_ | sed 's/\.c//g'
 LINKS != ls -1 ${SRC}/*.c | grep ^${SRC}/link_ | sed 's/\.c//g'
@@ -59,6 +59,7 @@ test_% : test_%.c
 	${CC} ${CFLAGS} -o $@ $<
 
 link_% : link_%.c ${TARGET}.so
+	@echo Building $@ from $<
 	${CC} ${CFLAGS_LINK} -o $@ $< ./${TARGET}.so  /usr/local/lib/libreadargs.a
 
 # Other project rules:
@@ -82,3 +83,4 @@ show:
 	@echo CFLAGS_LINK is ${CFLAGS_LINK}
 	@echo MODULES is ${MODULES}
 	@echo TEST is ${TESTS}
+	@echo Link targets is/are ${LINKS}
