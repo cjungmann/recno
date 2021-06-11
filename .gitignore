@@ -1,4 +1,7 @@
 html
 latex
+*.a
+*.so
 *.db
 src/*.o
+src/link_basic
