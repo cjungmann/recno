@@ -96,12 +96,14 @@ EXPORT RECNO_ERROR recno_open(const char *path, RECNO_FLAGS flags, DB_HANDLE *ha
    if ((rval = recno_read_head_handle_direct(file, 0, RN_FILE, &head_handle, &handle->errnum)))
       goto abandon_file;
 
-   if (!confirm_head_handle(&head_handle))
+   // Confirm valid file by examining the file header
+   if ( ! hh_is_file_block(&head_handle)
+        || ! hh_file_good_magic(&head_handle))
    {
       rval = RECNO_INVALID_RECNO_FILE;
       goto abandon_file;
    }
-
+       
    handle->file = file;
    rval = RECNO_SUCCESS;
    goto exit_function;
