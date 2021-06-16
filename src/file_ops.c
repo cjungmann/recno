@@ -5,6 +5,7 @@
 #include "recno.h"
 #include "blocks.h"
 #include "file_ops.h"
+#include "locks.h"
 #include "extra.h"
 
 /**
@@ -15,28 +16,30 @@
  * 
  * @param file    an open file stream
  * @param length  number of bytes to extend the file
- * @param errnum  [out] set to system *errno* in the case of a system error.
+ * @param bloc    [in,out] offset and size of newly-allocated space
+ * @param errnum  [in,out] set to system *errno* in the case of a system error
  *
  * @return appropriate RECNO_ERROR value to pass on to ultimate calling function.
  */
-RECNO_ERROR recno_extend_file_direct(FILE *file, uint32_t length, int *errnum)
+RECNO_ERROR fiops_extend_file_direct(FILE *file, uint32_t length, BLOC *bloc, int *errnum)
 {
-   RECNO_ERROR rval = RECNO_SUCCESS;
-
+   memset(bloc, 0, sizeof(BLOC));
    *errnum = 0;
+   off_t new_offset;
 
    if (fseek(file, length-1, SEEK_END)
+       || 0 == (new_offset = ftell(file))
        || ! (fwrite("\0", 1, 1, file)==1 || !(errno = ferror(file))))
    {
-      rval = RECNO_SYSTEM_ERROR;
       *errnum = errno;
-      goto abandon_function;
+      return RECNO_SYSTEM_ERROR;
    }
-
-   // *errnum = fflush(file);
-
-  abandon_function:
-   return rval;
+   else
+   {
+      bloc->offset = new_offset;
+      bloc->size = length;
+      return RECNO_SUCCESS;
+   }
 }
 
 /**
@@ -51,7 +54,7 @@ RECNO_ERROR recno_extend_file_direct(FILE *file, uint32_t length, int *errnum)
  *
  * @return appropriate RECNO_ERROR value to pass on to ultimate calling function.
  */
-RECNO_ERROR recno_write_data_direct(FILE *file,
+RECNO_ERROR fiops_write_data_direct(FILE *file,
                                     const void *data,
                                     off_t offset,
                                     size_t length,
@@ -78,7 +81,7 @@ RECNO_ERROR recno_write_data_direct(FILE *file,
  *
  * @return appropriate RECNO_ERROR value to pass on to ultimate calling function.
  */
-RECNO_ERROR recno_read_data_direct(FILE *file,
+RECNO_ERROR fiops_read_data_direct(FILE *file,
                                    void *data,
                                    off_t offset,
                                    size_t length,
@@ -105,7 +108,7 @@ RECNO_ERROR recno_read_data_direct(FILE *file,
  *
  * @return appropriate RECNO_ERROR value to pass on to ultimate calling function.
  */
-RECNO_ERROR recno_read_head_handle_direct(FILE *file,
+RECNO_ERROR fiops_read_head_handle_direct(FILE *file,
                                           off_t offset,
                                           BTYPE type,
                                           HEAD_HANDLE *head_handle,
@@ -113,11 +116,11 @@ RECNO_ERROR recno_read_head_handle_direct(FILE *file,
 {
    RECNO_ERROR rval;
    
-   uint16_t head_size = recno_get_headsize(type);
+   uint16_t head_size = blocks_get_headsize(type);
 
    HEAD_HANDLE temp_handle = { { offset, head_size } };
 
-   if (!(rval = recno_read_data_direct(file,
+   if (!(rval = fiops_read_data_direct(file,
                                        &temp_handle.header,
                                        offset,
                                        head_size,
@@ -139,12 +142,12 @@ RECNO_ERROR recno_read_head_handle_direct(FILE *file,
  *
  * @return appropriate RECNO_ERROR value to pass on to ultimate calling function.
  */
-RECNO_ERROR recno_handle_initialize_head(DB_HANDLE *handle,
+RECNO_ERROR fiops_handle_initialize_head(DB_HANDLE *handle,
                                          off_t offset,
                                          BTYPE type,
                                          HEAD_HANDLE *head_handle)
 {
-   return recno_read_head_handle_direct(handle->file, offset, type, head_handle, &handle->errnum);
+   return fiops_read_head_handle_direct(handle->file, offset, type, head_handle, &handle->errnum);
 }
 
 /**
@@ -155,9 +158,9 @@ RECNO_ERROR recno_handle_initialize_head(DB_HANDLE *handle,
  *
  * @return appropriate RECNO_ERROR value to pass on to ultimate calling function.
  */
-RECNO_ERROR recno_write_head(DB_HANDLE *db_handle, const HEAD_HANDLE *head_handle)
+RECNO_ERROR fiops_write_head(DB_HANDLE *db_handle, const HEAD_HANDLE *head_handle)
 {
-   return recno_write_data_direct(db_handle->file,
+   return fiops_write_data_direct(db_handle->file,
                                   &head_handle->header,
                                   head_handle->bloc.offset,
                                   head_handle->bloc.size,
@@ -171,13 +174,44 @@ RECNO_ERROR recno_write_head(DB_HANDLE *db_handle, const HEAD_HANDLE *head_handl
  *
  * @return appropriate RECNO_ERROR value to pass on to ultimate calling function.
  */
-RECNO_ERROR recno_update_head(DB_HANDLE *db_handle, HEAD_HANDLE *head_handle)
+RECNO_ERROR fiops_update_head(DB_HANDLE *db_handle, HEAD_HANDLE *head_handle)
 {
-   return recno_read_data_direct(db_handle->file,
+   return fiops_read_data_direct(db_handle->file,
                                  &head_handle->header,
                                  head_handle->bloc.offset,
                                  head_handle->bloc.size,
                                  &db_handle->errnum);
 }
 
+RECNO_ERROR fiops_lock_head_and_read(DB_HANDLE *db_handle, HEAD_HANDLE *head_handle)
+{
+   RECNO_ERROR rval;
 
+   if ((rval = locks_set_lock(db_handle, &head_handle->bloc)))
+      goto abandon_function;
+
+   rval = fiops_update_head(db_handle, head_handle);
+
+  abandon_function:
+   return rval;
+}
+
+RECNO_ERROR fiops_write_head_and_unlock(DB_HANDLE *db_handle, HEAD_HANDLE *head_handle)
+{
+   RECNO_ERROR rval_write, rval_unlock;
+
+   rval_write = fiops_write_head(db_handle, head_handle);
+   rval_unlock = locks_release_lock(db_handle, &head_handle->bloc);
+
+   if (rval_write)
+      return rval_write;
+   else if (rval_unlock)
+      return rval_unlock;
+   else
+      return RECNO_SUCCESS;
+}
+
+RECNO_ERROR fiops_unlock_head(DB_HANDLE *db_handle, HEAD_HANDLE *head_handle)
+{
+   return locks_release_lock(db_handle, &head_handle->bloc);
+}
