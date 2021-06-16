@@ -3,8 +3,9 @@
 #include "recno.h"
 #include "blocks.h"
 #include "file_ops.h"
+#include "extra.h"
 
-uint16_t recno_get_headsize(BTYPE type)
+uint16_t blocks_get_headsize(BTYPE type)
 {
    switch(type)
    {
@@ -17,6 +18,11 @@ uint16_t recno_get_headsize(BTYPE type)
       default:
          return sizeof(HEAD_BLOCK);
    }
+}
+
+uint32_t blocks_convert_length(DB_HANDLE *dbh, size_t min_length)
+{
+   return (min_length / hh_chunk_size(&dbh->head_handle)) + 1;
 }
 
 /**

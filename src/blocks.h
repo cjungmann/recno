@@ -98,7 +98,11 @@ typedef struct rn_head_file {
    INFO_FILE  info_file;
 } HEAD_FILE;
 
-uint16_t recno_get_headsize(BTYPE type);
+// Typedeffed to DB_HANDLE in recno.h
+struct recno_handle;
+
+uint16_t blocks_get_headsize(BTYPE type);
+uint32_t blocks_convert_length(struct recno_handle *dbh, size_t min_length);
 
 
 
