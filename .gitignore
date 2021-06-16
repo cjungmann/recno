@@ -5,3 +5,4 @@ latex
 *.db
 src/*.o
 src/link_basic
+src/link_chains
