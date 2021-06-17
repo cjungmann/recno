@@ -22,7 +22,8 @@ uint16_t blocks_get_headsize(BTYPE type)
 
 uint32_t blocks_convert_length(DB_HANDLE *dbh, size_t min_length)
 {
-   return (min_length / hh_chunk_size(&dbh->head_handle)) + 1;
+   uint32_t csize = hh_chunk_size(&dbh->head_handle);
+   return ((min_length / csize ) + 1) * csize;
 }
 
 /**
