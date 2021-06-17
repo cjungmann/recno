@@ -34,11 +34,13 @@ EXPORT RECNO_ERROR recno_create(const char *path, CREATE_PARAMS *params, DB_HAND
    if (!chunk_size)
       chunk_size = 4096;
 
-   if ((rval = recno_extend_file_direct(file, chunk_size, &handle->errnum)))
+   BLOC bloc;
+
+   if ((rval = fiops_extend_file_direct(file, chunk_size, &bloc, &handle->errnum)))
       goto abandon_file;
 
    // Initialize temporary DB_HANDLE for writing as well as eventual return parameter
-   uint16_t head_size = recno_get_headsize(RN_FILE);
+   uint16_t head_size = blocks_get_headsize(RN_FILE);
    DB_HANDLE temp_handle =
       { file, 0, 0, 
         // Initialize DB_HANDLE
@@ -55,7 +57,7 @@ EXPORT RECNO_ERROR recno_create(const char *path, CREATE_PARAMS *params, DB_HAND
       };
 
    // Use error-checking function to write the file head
-   if ((rval = recno_write_head(&temp_handle, &temp_handle.head_handle)))
+   if ((rval = fiops_write_head(&temp_handle, &temp_handle.head_handle)))
       goto abandon_file;
 
    // Extension and head writing successful, prepare return parameters
@@ -93,7 +95,7 @@ EXPORT RECNO_ERROR recno_open(const char *path, RECNO_FLAGS flags, DB_HANDLE *ha
 
    // Read file head and confirm file type
    HEAD_HANDLE head_handle;
-   if ((rval = recno_read_head_handle_direct(file, 0, RN_FILE, &head_handle, &handle->errnum)))
+   if ((rval = fiops_read_head_handle_direct(file, 0, RN_FILE, &head_handle, &handle->errnum)))
       goto abandon_file;
 
    // Confirm valid file by examining the file header
@@ -154,7 +156,7 @@ EXPORT RECNO_ERROR recno_open_table(DB_HANDLE *handle, const char *table_name, H
    if (table_name == NULL)
    {
       table_handle->bloc.offset = 0;
-      table_handle->bloc.size = recno_get_headsize(RN_TABLE);
+      table_handle->bloc.size = blocks_get_headsize(RN_TABLE);
    }
 
 
