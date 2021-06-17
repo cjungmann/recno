@@ -3,8 +3,9 @@
 #include <fcntl.h>    // for fcntl()  (setting locks)
 #include <unistd.h>   // for getpid()
 #include <errno.h>
-
+#define __USE_POSIX
 #include <stdio.h>    // for fileno()
+#undef __USE_POSIX
 
 #include "recno.h"
 
@@ -67,10 +68,10 @@ RECNO_ERROR locks_release_lock_direct(FILE *file, off_t offset, size_t length, i
 
 RECNO_ERROR locks_set_lock(DB_HANDLE *handle, BLOC *bloc)
 {
-   return locks_set_lock(handle, bloc.offset, bloc.size, &handle->errnum);
+   return locks_set_lock_direct(handle->file, bloc->offset, bloc->size, &handle->errnum);
 }
 
 RECNO_ERROR locks_release_lock(DB_HANDLE *handle, BLOC *bloc)
 {
-   return locks_release_lock(handle, bloc.offset, bloc.size, &handle->errnum);
+   return locks_release_lock_direct(handle->file, bloc->offset, bloc->size, &handle->errnum);
 }
