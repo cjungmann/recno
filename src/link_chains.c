@@ -17,7 +17,7 @@ void test_augment(void)
       printf("Success opening %s.\n", filepath);
 
       HEAD_HANDLE new_block_head;
-      if ((err = chains_chain_augment(&handle, &handle.head_handle, &new_block_head)))
+      if ((err = chains_chain_augment(&handle, &handle.head_handle, 0, &new_block_head)))
          printf("Failed to extend the file block chain (%s).\n", recno_strerror(err, &handle));
       else
          printf("Success extending the file block chain.\n");
